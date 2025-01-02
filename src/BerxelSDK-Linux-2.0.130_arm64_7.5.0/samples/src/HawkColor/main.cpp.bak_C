@@ -1,0 +1,264 @@
+
+#include <stdio.h>
+#include <string.h>
+
+// Berxel Head File
+
+#include "BerxelCommonFunc.h"
+#include "BerxelImageRender.h"
+
+#include "BerxelInterface.h"
+#include "BerxelDefines.h"
+
+
+BerxelImageRender*			 g_pImageRender = NULL;
+
+BerxelDeviceHandle   g_DeviceHandle  =  NULL;
+BerxelStreamHandle   g_streamHandle  =  NULL;
+BerxelRecordHandle   g_recordHandle  =  NULL;
+BerxelStreamHandle   g_streamDepthHandle  =  NULL;
+
+
+static int  IMAGE_WIDTH	 = 640;
+static int  IMAGE_HEIGHT = 400;
+
+static char errMsg[256] = {0};
+bool g_bStartStream = false; 
+bool g_bSave = false;
+static char deviceShowInfo[256];
+
+#pragma pack (push, 1)
+
+typedef struct tagFrameData {
+	uint16_t streamType;   //2 byte  BerxelStreamType
+	uint32_t frameNum;
+	uint64_t timestamp;
+	uint32_t dataSize;
+	int32_t  width;
+	int32_t  height;
+}FrameData;
+
+#pragma pack(pop)
+
+FILE *f = NULL; 
+
+static bool renderImage()
+{	
+	static char       mMesgInfo[256] = {0};
+	static RGB888	  s_rgbImage[1920 * 1080];
+	static  uint16_t  s_oriDepth[400 *640];
+
+
+
+	if(false == g_bStartStream)
+	{
+		g_pImageRender->initView();
+		g_pImageRender->drawLine(0,35, IMAGE_WIDTH + 80 ,40);
+		g_pImageRender->drawString(errMsg, 5, 25 , (void *)0x0008);
+
+		g_pImageRender->drawLine(0,IMAGE_HEIGHT + 42, IMAGE_WIDTH + 80 ,40);
+		g_pImageRender->updateView();
+		
+		return false;
+	}
+
+#if 1
+	FrameData frameData;
+
+	fread(&frameData, sizeof(frameData),1, f);
+
+
+	if(feof(f))
+	{
+		//printf("read file end!");
+		//return false;
+		memset(s_rgbImage, 0 ,sizeof(s_rgbImage));
+	}
+	else
+	{
+
+#if 0
+		fread(s_rgbImage, frameData.dataSize,1, f);
+#else	
+		fread(s_oriDepth, frameData.dataSize,1, f);	
+		uint16_t *pdeth = (uint16_t *)s_oriDepth;	
+		for(int i = 0 ; i < frameData.width * frameData.height ; i++)
+		{
+			s_rgbImage[i].r =pdeth[i] >> 7;
+			s_rgbImage[i].b = pdeth[i] >> 7;
+			s_rgbImage[i].g = pdeth[i] >> 7;
+		}
+
+#endif
+
+
+	
+	}
+
+#else
+
+
+#if 0
+	BerxelImageFrame *pFrame = NULL;
+	berxelReadFrame(g_streamHandle, &pFrame, 30);
+
+	if(pFrame == NULL)
+	{
+		return false;
+	}
+	memcpy(s_rgbImage, pFrame->pData,pFrame->size);
+
+	berxelReleaseFrame(&pFrame);
+#else
+	BerxelImageFrame *pFrame = NULL;
+	berxelReadFrame(g_streamDepthHandle, &pFrame, 30);
+
+	if(pFrame == NULL)
+	{
+		return false;
+	}
+
+	uint16_t *pdeth = (uint16_t *)pFrame->pData;
+
+	for(int i = 0 ; i < pFrame->width * pFrame->height ; i++)
+	{
+		s_rgbImage[i].r =pdeth[i] >> 7;
+		s_rgbImage[i].b = pdeth[i] >> 7;
+		s_rgbImage[i].g = pdeth[i] >> 7;
+	}
+
+
+	//memcpy(s_rgbImage, pFrame->pData,pFrame->size);
+
+	berxelReleaseFrame(&pFrame);
+
+#endif
+
+
+#endif
+	static int index = 0;
+
+	/*memset(mMesgInfo ,0 ,sizeof(mMesgInfo));
+	sprintf(mMesgInfo , "%d*%d@fps %d" ,pFrame->width , pFrame->height ,pFrame->fps);*/
+
+	//Render Image
+	g_pImageRender->initView();
+
+	g_pImageRender->drawLine(0,35, IMAGE_WIDTH + 80 ,40);
+	g_pImageRender->drawString(mMesgInfo,5, 25 , (void *)0x0008);
+
+	g_pImageRender->drawLine(0,IMAGE_HEIGHT + 42, IMAGE_WIDTH + 80 ,40);
+	g_pImageRender->drawString(deviceShowInfo, 5, IMAGE_HEIGHT + 40 + 25 , (void *)0x0007);
+
+	WinRect rect(40, 40, IMAGE_WIDTH, IMAGE_HEIGHT);
+	g_pImageRender->drawColorImage((uint8_t*)s_rgbImage,  IMAGE_WIDTH , IMAGE_HEIGHT,  rect);
+
+	g_pImageRender->updateView();
+	// free frame
+	
+    return true;
+}
+
+
+void keyCallBack(unsigned char key)
+{
+	switch (key)
+	{
+	case 'S':
+	case 's':
+		g_bSave = true;
+		break;
+
+	case 'w':
+	case 'W':		
+		berxelStartRecord(g_recordHandle);
+		break;
+
+	case 'h':
+	case 'H':
+		berxelStopRecord(g_recordHandle);
+		berxelDestroyRecord(g_recordHandle);
+		break;
+	default:
+		printf("Please input 's' or 'S'  to save image: \n");
+		break;
+	}
+}
+
+int Exit()
+{
+
+	
+	berxelCloseStream(g_streamHandle);
+	berxelCloseDevice(g_DeviceHandle);
+	berxelDestroy();
+
+	getchar();
+
+	return 0;
+}
+
+
+int creatWindow(int argc, char** argv)
+{
+	g_pImageRender = new BerxelImageRender(argc, argv, "Berxel HawkColor", IMAGE_WIDTH+ 80 , IMAGE_HEIGHT + 80); // window title & size
+
+	g_pImageRender->setInfoCallback(renderImage , keyCallBack);
+	g_pImageRender->startView();
+
+	return 0;
+}
+
+
+int main(int argc, char** argv)
+{
+	//ªÒ»°context
+	//g_context = berxel::BerxelHawkContext::getBerxelContext();
+	berxelInit();
+
+	BerxelDeviceInfo * g_deviceInfoList;
+	uint32_t deviceCount = 0 ;
+	berxelGetDeviceList(&g_deviceInfoList, &deviceCount);
+
+
+	if(deviceCount <= 0)
+	{
+		Exit();
+		return -1;
+	}
+
+	berxelOpenDeviceByAddr(g_deviceInfoList[0].deviceAddress,&g_DeviceHandle);
+
+
+	const BerxelStreamFrameMode *frameMode = berxelGetCurrentStramFrameMode(g_DeviceHandle, BERXEL_COLOR_STREAM);
+
+	IMAGE_WIDTH  =  frameMode->resolutionX ;
+	IMAGE_HEIGHT =  frameMode->resolutionY ;
+
+	int ret = berxelOpenStream(g_DeviceHandle, BERXEL_COLOR_STREAM , &g_streamHandle);
+
+	ret = berxelOpenStream(g_DeviceHandle, BERXEL_DEPTH_STREAM , &g_streamDepthHandle);
+
+	if(ret != 0)
+	{
+		sprintf(errMsg,"%s", "Open Berxel Stream Failed");
+		return creatWindow(argc ,argv);
+	}
+
+#if 0
+	berxelOpenRecord(g_streamDepthHandle, "RecordDepth2.bin", &g_recordHandle);
+	//berxelRecorderAttachStream(g_recordHandle, g_streamHandle, BERXEL_COLOR_STREAM);
+	//berxelRecorderAttachStream(g_recordHandle, g_streamDepthHandle, BERXEL_DEPTH_STREAM);
+
+
+#else
+
+	f = fopen("RecordDepth2.bin","rb+");
+
+#endif
+
+
+	g_bStartStream = true;
+	creatWindow(argc,argv);
+	return Exit();
+}

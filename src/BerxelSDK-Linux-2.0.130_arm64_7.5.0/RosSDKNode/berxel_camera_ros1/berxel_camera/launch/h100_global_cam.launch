@@ -1,0 +1,108 @@
+<launch>
+    <!--设备信息设置，支持设备串号， USB端口，或者IP地址 -->
+    <arg name="serial_no"                           default="" />
+    <arg name="usb_bus"                             default="0" />
+    <arg name="usb_port"                            default="" />
+    <arg name="device_address"                     default="172.24.49.203" />
+    <arg name="camera"                              default="global_cam" />
+    <arg name="tf_prefix"                           default="$(arg camera)"/>
+
+    <!--流标志  1:单一流 2: 混合VGA流 3:混合HD流 4:混合QVGA流 -->
+    <arg name="stream_flag"                         default="2" />
+    <!--流类型设置  1:彩色图像流 2:深度图像流 3:深度彩色流 4: 红外图像流 32: 红外图像流 -->
+    <arg name="stream_type"                         default="3" />
+    <!-- 分辨率支持 VGA（480p）/QVGA(720p)/HD(1080p) -->
+    <arg name="color_width"                         default="640" />
+    <arg name="color_height"                        default="400" />
+    <arg name="depth_width"                         default="640" />
+    <arg name="depth_height"                        default="400" />
+    <arg name="ir_width"                            default="640" />
+    <arg name="ir_height"                           default="400" />
+    <!--帧率设置， VGA/QVGA分辨率支持 5-10-15-20-25-30fps  HD分辨率仅支持8fps -->
+    <arg name="depth_fps"                           default="1" />
+    <!--配准功能， 深度对齐彩色-->
+    <arg name="enable_align"                        default="true" />
+    <!--点云使能 true : 发布点云数据 false : 不发布点云数据-->
+    <arg name="enable_pointcloud"                   default="true" />
+    <!--彩色点云使能功能， 需打开深度和彩色，分辨率一致， true : 发布彩色点云数据 false : 不发布彩色点云数据-->
+    <arg name="enable_color_pointcloud"             default="true" />
+    <!--降噪功能 true : 打开降噪  false : 关闭降噪-->
+	<arg name="enable_denoise"                      default="false" />
+    <!--温补功能 true : 打开温补 false : 关闭温补-->
+    <arg name="enable_temperature_compensation"     default="false" />
+    <!--true : 打开距离传感器(默认10cm触发)   false : 关闭距离传感器功能-->
+	<arg name="enable_distance_check"               default="false" />
+    <!--true : 有序点云  false : 无序点云-->
+    <arg name="enable_ordered_pointcloud"           default="true" />
+    <!--true : 使用设备时间戳发布数据   false : 使用ros::Time发布数据-->
+    <arg name="enable_device_timestamp"             default="true" />
+    <!-- 配置对于有序点云的无效点数据格式，true : 无效点数据为0x00， false : 无效点数据为 0xFFFFFFFF-->
+    <arg name="enable_invalid_point_data_zero"      default="true" />
+    <!--设置深度置信度， 需先设置为true，然后修改depth_confidence进行设置-->
+    <arg name="enable_set_depth_Confidence"         default="false" />
+    <!--深度置信度值，需先设置enable_set_depth_Confidence为true才可以进行设置，范围[3-5]-->
+    <arg name="depth_confidence"                    default="3" />
+    <!--激光器电流 范围[7-15] (单位 *100 ma)-->
+    <arg name="depth_current"                       default="15" />
+    <!--深度AE功能 true : 打开AE  false : 关闭AE-->
+    <arg name="enable_depth_ae"                     default="true" />
+    <!--深度曝光时间，在AE关闭状态下生效， 范围[10-43] (单位  *0.1 ms)-->
+    <arg name="depth_exposure_time"                 default="33" />
+    <!--深度增益，在AE关闭状态下生效， 范围[1-4]-->
+    <arg name="depth_gain"                          default="1" />
+    <!--边缘优化  true : 打开边缘优化处理  false : 关闭边缘优化处理-->
+    <arg name="enable_edge_optimization"            default="false" />
+    <!--固件高帧率模式 true : 打开  false : 关闭-->
+    <arg name="enable_hight_fps_mode"               default="false" />
+    <!--AE状态下调节Gain动态范围  true : 使能调节  false : 禁止调节-->
+    <arg name="enable_adjust_ae_gain_range"         default="false" />
+    <!--AE使能状态下Gain值动态调节范围下限-->
+    <arg name="depth_ae_gain_range_min"             default="1" />
+    <!--AE使能状态下Gain值动态调节范围上限-->
+    <arg name="depth_ae_gain_range_max"             default="4" />
+    <!--使能图像缓存功能-->
+    <arg name="enable_image_cache"                  default="false" />
+    <!--图像缓存数量-->
+    <arg name="image_cache_count"                   default="10" />
+
+    <include file="$(find berxel_camera)/launch/include/berxel_camera_iHawk100E.launch.xml">
+        <arg name="serial_no"                   value="$(arg serial_no)" />
+        <arg name="usb_bus"                     value="$(arg usb_bus)"/>
+        <arg name="usb_port"                    value="$(arg usb_port)" />
+        <arg name="device_address"              value="$(arg device_address)"  />
+        <arg name="camera"                      value="$(arg camera)" />
+        <arg name="tf_prefix"                   value="$(arg tf_prefix)"/>
+        <arg name="stream_flag"                 value="$(arg stream_flag)" />
+        <arg name="stream_type"                 value="$(arg stream_type)" />
+        <arg name="color_width"                 value="$(arg color_width)" />
+        <arg name="color_height"                value="$(arg color_height)" />
+        <arg name="depth_width"                 value="$(arg depth_width)" />
+        <arg name="depth_height"                value="$(arg depth_height)" />
+        <arg name="ir_width"                    value="$(arg ir_width)" />
+        <arg name="ir_height"                   value="$(arg ir_height)" />
+        <arg name="depth_fps"                   value="$(arg depth_fps)" />
+        <arg name="enable_align"                value="$(arg enable_align)" />
+        <arg name="enable_pointcloud"           value="$(arg enable_pointcloud)" />
+        <arg name="enable_color_pointcloud"     value="$(arg enable_color_pointcloud)" />
+        <arg name="enable_denoise"              value="$(arg enable_denoise)" />
+        <arg name="enable_temperature_compensation"     value="$(arg enable_temperature_compensation)" />
+        <arg name="enable_distance_check"       value="$(arg enable_distance_check)" />
+        <arg name="enable_ordered_pointcloud"   value="$(arg enable_ordered_pointcloud)" />
+        <arg name="enable_device_timestamp"     value="$(arg enable_device_timestamp)" />
+        <arg name="enable_invalid_point_data_zero"     value="$(arg enable_invalid_point_data_zero)" />
+        <arg name="enable_set_depth_Confidence"     value="$(arg enable_set_depth_Confidence)" />
+        <arg name="depth_confidence"            value="$(arg depth_confidence)" />
+        <arg name="depth_current"            value="$(arg depth_current)" />
+        <arg name="enable_depth_ae"            value="$(arg enable_depth_ae)" />
+        <arg name="depth_exposure_time"            value="$(arg depth_exposure_time)" />
+        <arg name="depth_gain"            value="$(arg depth_gain)" />
+        <arg name="enable_edge_optimization"            value="$(arg enable_edge_optimization)" />
+        <arg name="enable_hight_fps_mode"            value="$(arg enable_hight_fps_mode)" />
+        <arg name="enable_adjust_ae_gain_range"            value="$(arg enable_adjust_ae_gain_range)" />
+        <arg name="depth_ae_gain_range_min"            value="$(arg depth_ae_gain_range_min)" />
+        <arg name="depth_ae_gain_range_max"            value="$(arg depth_ae_gain_range_max)" />
+        <arg name="enable_image_cache"            value="$(arg enable_image_cache)" />
+        <arg name="image_cache_count"            value="$(arg image_cache_count)" />
+    </include>
+    
+</launch>
