@@ -1,0 +1,8 @@
+prefix=/home/observer/arm_vision/devel
+
+Name: circle_detection
+Description: Description of circle_detection
+Version: 0.0.0
+Cflags: -I/home/observer/arm_vision/src/circle_detection/include
+Libs: -L${prefix}/lib 
+Requires: cv_bridge image_transport message_filters roscpp sensor_msgs

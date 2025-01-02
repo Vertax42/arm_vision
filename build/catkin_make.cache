@@ -1,0 +1,2 @@
+circle_detection
+-DCATKIN_DEVEL_PREFIX=/home/observer/arm_vision/devel -DCMAKE_INSTALL_PREFIX=/home/observer/arm_vision/install -G Unix Makefiles
