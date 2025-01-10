@@ -50,10 +50,10 @@ public:
 
     cv::Point2f calculateCircleCenter(cv::Point2f a, cv::Point2f b, cv::Point2f c);
 
-    bool imageCallback(const std::vector<sensor_msgs::ImageConstPtr>& color_msg,
-                   const std::vector<sensor_msgs::PointCloud2ConstPtr>& cloud_msg,
-                   cv::Mat &processed_image,Eigen::Matrix4f& poseMatrix,
-                   sensor_msgs::PointCloud2 &ros_cloud, DetectionType type);
+    bool imageCallback(const std::vector<sensor_msgs::ImageConstPtr> &color_msg,
+                       const std::vector<sensor_msgs::PointCloud2ConstPtr> &cloud_msg, cv::Mat &processed_image,
+                       Eigen::Matrix4f &poseMatrix, sensor_msgs::PointCloud2 &ros_cloud, DetectionType type,
+                       std::string &error);
 
     bool is_same_point(const pcl::PointXYZRGB& point1, const pcl::PointXYZRGB& point2);
 

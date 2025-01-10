@@ -379,7 +379,7 @@ cv_bridge::CvImagePtr circle_detector::chooseBestImage(const std::vector<cv_brid
 bool circle_detector::imageCallback(const std::vector<sensor_msgs::ImageConstPtr> &color_msg,
                                     const std::vector<sensor_msgs::PointCloud2ConstPtr> &cloud_msg,
                                     cv::Mat &processed_image, Eigen::Matrix4f &poseMatrix,
-                                    sensor_msgs::PointCloud2 &ros_cloud, DetectionType type)
+                                    sensor_msgs::PointCloud2 &ros_cloud, DetectionType type, std::string &error)
 {
 
     static bool printed_info = false;
@@ -393,19 +393,21 @@ bool circle_detector::imageCallback(const std::vector<sensor_msgs::ImageConstPtr
 
     std::string version = get_version_string(); // get lib version
     ROS_INFO("Now using libcircle_detection Version: %s", version.c_str());
-
+    error = "";
     auto start_time = std::chrono::high_resolution_clock::now();
 
     // verify input data
     if(color_msg.size() == 0 || cloud_msg.size() == 0)
     {
         ROS_ERROR("Fatal Error: color_msg or cloud_msg empty!");
+        error = "Fatal Error: color_msg or cloud_msg empty!";
         return false;
     }
 
     if(color_msg.size() != cloud_msg.size())
     {
         ROS_ERROR("Fatal Error: color_msg and cloud_msg size not equal!");
+        error = "Fatal Error: color_msg and cloud_msg size not equal!";
         return false;
     }
 
@@ -703,6 +705,10 @@ bool circle_detector::imageCallback(const std::vector<sensor_msgs::ImageConstPtr
         contourCenter.x = static_cast<int>(target_circle_center.x);
         contourCenter.y = static_cast<int>(target_circle_center.y);
 
+        if(contourCenter.x <= 64 || contourCenter.x >= 576 || contourCenter.y <= 40 || contourCenter.y >= 360) {
+            error = "Fatal Error : target circle center out of boundary!";
+            return false;
+        }
         // std::vector<cv::Point> target_points;
         // std::vector<cv::Point> target_points_center;
         double sum_z = 0.0;
@@ -747,6 +753,7 @@ bool circle_detector::imageCallback(const std::vector<sensor_msgs::ImageConstPtr
         if((sum_z / count_n) < 0.15 || (sum_z / count_n) > 1.2)
         {
             ROS_ERROR("Fatal Error: The mean_z of contour_cloud is out of range!");
+            error = "Fatal Error: The mean_z of contour_cloud is out of range!";
             return false;
         } else if((sum_z / count_n) >= 0.45)
         {
@@ -791,9 +798,9 @@ bool circle_detector::imageCallback(const std::vector<sensor_msgs::ImageConstPtr
 
         if(!cloud_is_vaild(contour_cloud_center, 0.8))
         {
-            ROS_ERROR("Fatal Error: Over 80%% points in contour_cloud_center are (0, "
-                      "0, 0), cannot estimate contour_cloud_center! Please check the "
-                      "input point clouds!!!!");
+            ROS_ERROR("Fatal Error: Over 80%% points in contour_cloud_center are (0, 0, 0), cannot estimate contour_cloud_center! Please check the input point clouds!!!!");
+            error = "Fatal Error: Over 80%% points in contour_cloud_center are (0, 0, 0), cannot estimate "
+                    "contour_cloud_center! Please check the input point clouds!!!!";
             return false;
         }
 
@@ -829,6 +836,8 @@ bool circle_detector::imageCallback(const std::vector<sensor_msgs::ImageConstPtr
         {
             ROS_ERROR("Fatal Error: Too few points in contour_cloud or "
                       "contour_cloud_center! Please check the input point clouds!");
+            error = "Fatal Error: Too few points in contour_cloud or "
+                    "contour_cloud_center! Please check the input point clouds!";
             return false;
         }
     }
@@ -937,12 +946,6 @@ bool circle_detector::imageCallback(const std::vector<sensor_msgs::ImageConstPtr
                 ROS_INFO("ProjectPointOut corrdinates: x, y, z = (%f, %f, %f)", projectPointOut.x, projectPointOut.y,
                          projectPointOut.z);
 
-                // std::cout << "Completed plane cloud center: (" << projectPointIn.x <<
-                // ", " << projectPointIn.y << ", " << projectPointIn.z << ")" <<
-                // std::endl; std::cout << "projectPointOut corrdinates: (" <<
-                // projectPointOut.x << ", " << projectPointOut.y << ", " <<
-                // projectPointOut.z << ")" << std::endl;
-
                 if(contour_cloud_center_valid)
                 {
                     pcl::KdTreeFLANN<pcl::PointXYZRGB> kdtree1;
@@ -1016,12 +1019,12 @@ bool circle_detector::imageCallback(const std::vector<sensor_msgs::ImageConstPtr
             return true;
         }
         ROS_ERROR("Fatal Error: Nearest K search failed! ");
-        // std::cout << "Nearest K search failed! " << std::endl;
+        error = "Fatal Error: Nearest K search failed!";
         return false;
     } else
     {
         ROS_ERROR("Fatal Error: No contour points detected! ");
-        // std::cout << "目标轮廓点云信息缺失" << std::endl;
+        error = "Fatal Error: No contour points detected!";
         return false;
     }
 }
