@@ -535,7 +535,7 @@ bool circle_detector::imageCallback(const std::vector<sensor_msgs::ImageConstPtr
         // std::cout << "gray_image.size():"<< gray_image.size() << std::endl;
         // std::cout << "Gaussian & Median Blur Done." << std::endl;
         int param1 = 100;               // Canny边缘检测的高阈值
-        int param2 = 50;                // 累加器的阈值
+        int param2 = 64;                // 累加器的阈值
         int param3 = 50;                // 圆最小半径
         std::vector<cv::Vec3f> circles; // 用于存储检测到的圆的参数
         cv::HoughCircles(gray_image, circles, cv::HOUGH_GRADIENT, 1, gray_image.rows / 8, param1, param2, param3,
@@ -550,14 +550,14 @@ bool circle_detector::imageCallback(const std::vector<sensor_msgs::ImageConstPtr
             param1 *= 0.8;
             param2 *= 0.8;
             param3 *= 0.8;
-            if(param3 <= 20)
+            if(param3 <= 25)
             {
-                param3 = 20; // 圆最小半径
+                param3 = 25; // 圆最小半径
             }
             ROS_INFO("Now using Canny high threshold param1: %d, Adder counter "
                      "param2: %d, Min radius param3: %d",
                      param1, param2, param3);
-            if(param1 < 30 || param2 < 20)
+            if(param1 < 30 || param2 < 25)
             {
                 ROS_ERROR("Fatal Error: Taking wrong pictures, no Hough circle "
                           "detected! Please check the input image!");
@@ -573,6 +573,7 @@ bool circle_detector::imageCallback(const std::vector<sensor_msgs::ImageConstPtr
             ROS_ERROR("Fatal Error: Taking wrong pictures, too many circles "
                       "detected! Please check the input image!");
             // std::cout << "Error: Too many circles detected!" << std::endl;
+            error = "Fatal Error: Too many circles detected!";
             return false;
         }
 
