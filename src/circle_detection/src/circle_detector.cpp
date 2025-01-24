@@ -562,6 +562,7 @@ bool circle_detector::imageCallback(const std::vector<sensor_msgs::ImageConstPtr
                 ROS_ERROR("Fatal Error: Taking wrong pictures, no Hough circle "
                           "detected! Please check the input image!");
                 // std::cout << "No Hough circle detected." << std::endl;
+                error = "Fatal Error: Taking wrong pictures, no Hough circle detected! Please check the input image!";
                 return false;
             }
             cv::HoughCircles(gray_image, circles, cv::HOUGH_GRADIENT, 1, gray_image.rows / 8, param1, param2, param3,
